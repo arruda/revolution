@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}GameRoom: {{ object.pk }}{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="row">
+    <div class="col-sm-12">
+
+      <h2>Phase: {{ object.get_phase_txt }}</h2>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-3">
+
+      <h2>Players</h2>
+
+    </div>
+    <div class="col-md-9">
+        <ol>
+        {% for player in object.player_set.all %}
+            <li>{{ player.user.username }}</li>
+        {% endfor %}
+        </ol>
+    </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <h2>Options:</h2>
+      <p></p>
+
+        <form class="form-horizontal" method="post" action="{% url 'games:player-ready' player.pk %}">
+            {% csrf_token %}
+            {{ player_ready_form|crispy }}
+            <div class="control-group">
+              <div class="controls">
+                <button type="submit" class="btn">Save</button>
+              </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+
+
+</div>
+{% endblock content %}
+
