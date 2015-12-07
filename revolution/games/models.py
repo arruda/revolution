@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, absolute_import
 
+import random
+
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.db import models
@@ -45,6 +47,19 @@ class GameRoom(models.Model):
         else:
             return False
 
+    def reset_players_ready_state(self):
+        for player in self.player_set.all():
+            player.is_ready = False
+            player.save()
+
+    def check_all_players_ready(self):
+        if self.player_set.filter(is_ready=False).count() > 0:
+            return False
+        else:
+            self.reset_players_ready_state()
+            self.phase_resolution()
+            return False
+
     def get_phase_txt(self):
         return self.PHASES[self.phase]
 
@@ -83,39 +98,50 @@ class GameRoom(models.Model):
 
         return next_leader
 
+    def define_roles(self, num_spies):
+        """
+        Define the role for each player
+        """
+        all_players_list = list(self.player_set.all())
+        spies = random.sample(all_players_list, num_spies)
+        for spy in spies:
+            spy.role = spy.ROLES.spy
+            spy.save()
+        return True
+
     def phase_resolution(self):
         """
         Work out the current phase.
         """
 
-        if self.phase == self.PHASE.setup:
-            self.setup_game()
-            self.phase = self.PHASE.roles_definition
+        if self.phase == self.PHASES.setup:
+            if self.setup_game():
+                self.phase = self.PHASES.roles_definition
 
-        elif self.phase == self.PHASE.roles_definition:
-            self.phase = self.PHASE.leader_definition
+        elif self.phase == self.PHASES.roles_definition:
+            self.phase = self.PHASES.leader_definition
 
-        elif self.phase == self.PHASE.leader_definition:
+        elif self.phase == self.PHASES.leader_definition:
             self.define_leader()
-            self.phase = self.PHASE.mission_assignment
+            self.phase = self.PHASES.mission_assignment
 
-        elif self.phase == self.PHASE.mission_assignment:
-            self.phase = self.PHASE.mission_votation
+        elif self.phase == self.PHASES.mission_assignment:
+            self.phase = self.PHASES.mission_votation
 
-        elif self.phase == self.PHASE.mission_votation:
+        elif self.phase == self.PHASES.mission_votation:
             if self.mission_votes_passed():
-                self.phase = self.PHASE.mission_resolution
+                self.phase = self.PHASES.mission_resolution
             else:
-                self.phase = self.PHASE.leader_definition
+                self.phase = self.PHASES.leader_definition
 
-        elif self.phase == self.PHASE.mission_resolution:
-            self.phase = self.PHASE.gameover_check
+        elif self.phase == self.PHASES.mission_resolution:
+            self.phase = self.PHASES.gameover_check
 
-        elif self.phase == self.PHASE.gameover_check:
+        elif self.phase == self.PHASES.gameover_check:
             if self.check_for_gameover():
-                self.phase = self.PHASE.gameover
+                self.phase = self.PHASES.gameover
             else:
-                self.phase = self.PHASE.leader_definition
+                self.phase = self.PHASES.leader_definition
 
         self.save()
 
@@ -133,6 +159,7 @@ class GameRoom(models.Model):
         for player in self.player_set.all():
             player.number = player_number
             player.save()
+            player_number += 1
 
         # config missions
         num_missions = 5
@@ -156,7 +183,8 @@ class GameRoom(models.Model):
             mission_assignments = [3, 4, 4, 5, 5]
 
         num_rev = amount_players - num_spies
-        for n_mission in xrange(0, num_missions):
+        self.define_roles(num_spies)
+        for n_mission in range(0, num_missions):
             is_first_mission = True if n_mission == 0 else False
 
             self.mission_set.create(
@@ -191,8 +219,14 @@ class Player(models.Model):
     )
     role = models.IntegerField(choices=ROLES, default=ROLES.revolutionary, blank=True)
 
+    class Meta:
+        ordering = ['number', ]
+
     def __str__(self):
         return self.user.name
+
+    def get_role_txt(self):
+        return self.ROLES[self.role]
 
 
 @python_2_unicode_compatible
@@ -217,9 +251,15 @@ class Mission(models.Model):
 
     assigned_players = models.ManyToManyField(Player, verbose_name=_("Assigned Players"))
 
+    class Meta:
+        ordering = ['pk', ]
+
     # mission_number = models.IntegerField(_('Mission Number'), default=1, blank=True)
 
     def __str__(self):
+        return self.OUTCOMES[self.outcome]
+
+    def get_outcome_txt(self):
         return self.OUTCOMES[self.outcome]
 
 

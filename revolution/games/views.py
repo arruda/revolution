@@ -46,5 +46,11 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
     slug_field = "pk"
     slug_url_kwarg = "pk"
 
+    def form_valid(self, form):
+        response = super(PlayerChangeReadyStateView, self).form_valid(form)
+        gameroom = self.object.gameroom
+        gameroom.check_all_players_ready()
+        return response
+
     def get_success_url(self):
         return self.object.gameroom.get_absolute_url()

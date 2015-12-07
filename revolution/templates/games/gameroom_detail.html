@@ -18,19 +18,28 @@
     <div class="col-sm-3">
 
       <h2>Players</h2>
+        <ol>
+        {% for p in object.player_set.all %}
+            <li>{{ p.user.username }} | {{ p.is_ready }}{% if player.role == player.ROLES.spy %} | {{ p.get_role_txt }}{% endif %}{% if p.is_leader %} | LEADER {% endif %}</li>
+
+        {% endfor %}
+        </ol>
 
     </div>
     <div class="col-md-9">
+      <h2>Missions:</h2>
         <ol>
-        {% for player in object.player_set.all %}
-            <li>{{ player.user.username }}</li>
-        {% endfor %}
+          {% for mission in object.mission_set.all %}
+            <li>{{ mission.is_active }} | Players: {{ mission.amount_players }} | Outcome: {{ mission.get_outcome_txt }}</li>
+
+          {% endfor %}
         </ol>
     </div>
+
   <div class="row">
     <div class="col-xs-12">
       <h2>Options:</h2>
-      <p></p>
+      <p>You are a {{ player.get_role_txt }}</p>
 
         <form class="form-horizontal" method="post" action="{% url 'games:player-ready' player.pk %}">
             {% csrf_token %}
