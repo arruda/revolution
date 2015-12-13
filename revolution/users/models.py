@@ -20,3 +20,10 @@ class User(AbstractUser):
 
     def get_absolute_url(self):
         return reverse('users:detail', kwargs={'username': self.username})
+
+    def get_user_gamerooms(self):
+        gameroom_id_list = self.player_set.values_list('gameroom')
+        GameRoomQS = self.player_set.model.gameroom.get_queryset()
+        gamerooms = GameRoomQS.filter(pk__in=gameroom_id_list)
+
+        return gamerooms
