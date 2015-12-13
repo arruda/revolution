@@ -10,7 +10,7 @@ from django.views.generic import CreateView
 from braces.views import LoginRequiredMixin
 
 from .models import GameRoom, Player
-from .forms import PlayerChangeReadyStateForm
+from .forms import PlayerChangeReadyStateForm, PlayerIsLeaderStateForm
 
 
 class GameRoomListView(LoginRequiredMixin, ListView):
@@ -39,12 +39,29 @@ class GameRoomDetailView(LoginRequiredMixin, DetailView):
     slug_field = "pk"
     slug_url_kwarg = "pk"
 
-    def get_context_data(self, **kwargs):
-        context = {}
-        # raise Exception()
+    def get_current_player(self):
         current_player = self.object.player_set.get(user=self.request.user)
-        context['player'] = current_player
-        context['player_ready_form'] = PlayerChangeReadyStateForm(instance=current_player)
+        self.current_player = current_player
+        return current_player
+
+    def get_player_state_form(self):
+
+        form = PlayerChangeReadyStateForm(instance=self.current_player)
+
+        if self.object.phase == self.object.PHASES.mission_assignment:
+            if self.current_player.is_leader:
+                form = PlayerIsLeaderStateForm(instance=self.current_player)
+        # elif self.object.phase == self.object.PHASES.mission_votation:
+        #     form = PlayerVotationStateForm(instance=current_player)
+
+        self.player_state_form = form
+        return self.player_state_form
+
+    def get_context_data(self, **kwargs):
+        self.get_current_player()
+        context = {}
+        context['player'] = self.current_player
+        context['player_ready_form'] = self.get_player_state_form()
 
         return super(GameRoomDetailView, self).get_context_data(**context)
 
@@ -70,8 +87,28 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         response = super(PlayerChangeReadyStateView, self).form_valid(form)
         gameroom = self.object.gameroom
+        if self.get_form_class() == PlayerIsLeaderStateForm:
+            players_to_mission = form.cleaned_data['players_to_mission']
+            gameroom.add_players_to_active_mission(players_to_mission)
         gameroom.check_all_players_ready()
         return response
 
     def get_success_url(self):
         return self.object.gameroom.get_absolute_url()
+
+
+    def get_player_state_form(self):
+
+        form = PlayerChangeReadyStateForm
+
+        if self.object.gameroom.phase == self.object.gameroom.PHASES.mission_assignment:
+            if self.object.is_leader:
+                form = PlayerIsLeaderStateForm
+        # elif self.object.phase == self.object.PHASES.mission_votation:
+        #     form = PlayerVotationStateForm(instance=current_player)
+
+        self.player_state_form = form
+        return self.player_state_form
+
+    def get_form_class(self):
+        return self.get_player_state_form()

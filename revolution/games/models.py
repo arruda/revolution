@@ -71,9 +71,12 @@ class GameRoom(models.Model):
     def get_active_mission(self):
         return self.mission_set.get(is_active=True)
 
-    def assign_player_to_active_mission(self, player):
+    def add_players_to_active_mission(self, players):
         active_mission = self.get_active_mission()
-        active_mission.assigned_players.add(player)
+        active_mission.assigned_players.all().delete()
+        for player in players:
+            active_mission.assigned_players.add(player)
+        active_mission.save()
 
     def define_leader(self):
         """
@@ -226,7 +229,7 @@ class Player(models.Model):
         ordering = ['number', ]
 
     def __str__(self):
-        return self.user.name
+        return self.user.username
 
     def get_role_txt(self):
         return self.ROLES[self.role]
