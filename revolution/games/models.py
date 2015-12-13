@@ -199,6 +199,9 @@ class GameRoom(models.Model):
     def get_absolute_url(self):
         return reverse('games:detail', args=[str(self.pk)])
 
+    def get_add_player_url(self):
+        return reverse('games:enter-game', args=[str(self.pk)])
+
 
 @python_2_unicode_compatible
 class Player(models.Model):

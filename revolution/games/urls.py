@@ -13,6 +13,11 @@ urlpatterns = [
         name='list'
     ),
     url(
+        regex=r'^~enter-game/(?P<pk>[\w.@+-]+)/$',
+        view=views.GameRoomEnterPlayerRedirectView.as_view(),
+        name='enter-game'
+    ),
+    url(
         regex=r'^(?P<pk>[\w.@+-]+)/$',
         view=views.GameRoomDetailView.as_view(),
         name='detail'

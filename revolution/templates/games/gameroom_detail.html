@@ -8,9 +8,17 @@
 <div class="container">
 
   <div class="row">
-    <div class="col-sm-12">
+    <div class="col-sm-9">
 
       <h2>Phase: {{ object.get_phase_txt }}</h2>
+    </div>
+    <div class="col-sm-3">
+      {% if object.phase == object.PHASES.setup %}
+        <h4>Share Game Room: </h4>
+        <span class="input-xlarge uneditable-input"><a href='{{ object.get_add_player_url }}'> Enter Game Link</a></span>
+      {% else %}
+        <h4>Game is ready to begin</h4>
+      {% endif %}
     </div>
   </div>
 

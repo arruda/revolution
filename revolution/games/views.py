@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from django.views.generic import DetailView, ListView, RedirectView, UpdateView
+from django.views.generic import DetailView, ListView, RedirectView, UpdateView, FormView
 from django.views.generic import CreateView
 
 from braces.views import LoginRequiredMixin
@@ -14,12 +15,22 @@ from .forms import PlayerChangeReadyStateForm
 
 class GameRoomListView(LoginRequiredMixin, ListView):
     model = GameRoom
-    # # These next two lines tell the view to index lookups by username
-    # slug_field = "username"
-    # slug_url_kwarg = "username"
 
     def get_queryset(self):
         return self.request.user.get_user_gamerooms()
+
+class GameRoomEnterPlayerRedirectView(LoginRequiredMixin, RedirectView):
+    permanent = False
+
+    query_string = True
+    pattern_name = 'games:detail'
+
+    def get_redirect_url(self, *args, **kwargs):
+        gameroom = get_object_or_404(GameRoom, pk=kwargs['pk'])
+        if gameroom.add_player(self.request.user):
+            return super(GameRoomEnterPlayerRedirectView, self).get_redirect_url(*args, **kwargs)
+        else:
+            return reverse('home')
 
 
 class GameRoomDetailView(LoginRequiredMixin, DetailView):
