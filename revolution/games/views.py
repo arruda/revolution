@@ -12,6 +12,16 @@ from .models import GameRoom, Player
 from .forms import PlayerChangeReadyStateForm
 
 
+class GameRoomListView(LoginRequiredMixin, ListView):
+    model = GameRoom
+    # # These next two lines tell the view to index lookups by username
+    # slug_field = "username"
+    # slug_url_kwarg = "username"
+
+    def get_queryset(self):
+        return self.request.user.get_user_gamerooms()
+
+
 class GameRoomDetailView(LoginRequiredMixin, DetailView):
     model = GameRoom
 
