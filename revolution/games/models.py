@@ -262,6 +262,11 @@ class Player(models.Model):
         except AssignmentVote.DoesNotExist:
             return None
 
+    def get_last_assignment_vote_for_active_mission(self):
+        return self.get_last_assignment_vote_for_mission(
+            self.gameroom.get_active_mission()
+        )
+
     def vote_for_mission(self, mission, vote):
         self.assignmentvote_set.create(mission=mission, result=vote)
         self.save()
