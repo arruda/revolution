@@ -73,7 +73,7 @@ class GameRoom(models.Model):
 
     def add_players_to_active_mission(self, players):
         active_mission = self.get_active_mission()
-        active_mission.assigned_players.all().delete()
+        active_mission.assigned_players.clear()
         for player in players:
             active_mission.assigned_players.add(player)
         active_mission.save()
@@ -111,6 +111,28 @@ class GameRoom(models.Model):
             spy.role = spy.ROLES.spy
             spy.save()
         return True
+
+
+    def mission_votes_passed(self):
+        """
+        Return true if more than half of players
+        voted in favor for current mission
+        """
+        import pdb; pdb.set_trace()
+        active_mission = self.get_active_mission()
+
+        players = list(self.player_set.all())
+
+        counter = 0
+        for p in players:
+            vote = p.get_last_assignment_vote_for_mission(active_mission)
+            if not vote.result:
+                counter += 1
+        if counter >= len(players)/2:
+            return False
+        else:
+            return True
+
 
     def phase_resolution(self):
         """
@@ -234,6 +256,18 @@ class Player(models.Model):
     def get_role_txt(self):
         return self.ROLES[self.role]
 
+    def get_last_assignment_vote_for_mission(self, mission):
+        try:
+            return self.assignmentvote_set.filter(mission=mission).latest('pk')
+        except AssignmentVote.DoesNotExist:
+            return None
+
+    def vote_for_mission(self, mission, vote):
+        self.assignmentvote_set.create(mission=mission, result=vote)
+        self.save()
+
+
+
 
 @python_2_unicode_compatible
 class Mission(models.Model):
@@ -280,7 +314,7 @@ class AssignmentVote(models.Model):
     result = models.BooleanField(_('Result'), default=False, blank=True)
 
     def __str__(self):
-        return "%s/%s"(self.player, self.result)
+        return "%s/%s" % (self.player, self.result)
 
 
 @python_2_unicode_compatible

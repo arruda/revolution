@@ -10,7 +10,7 @@ from django.views.generic import CreateView
 from braces.views import LoginRequiredMixin
 
 from .models import GameRoom, Player
-from .forms import PlayerChangeReadyStateForm, PlayerIsLeaderStateForm
+from .forms import PlayerChangeReadyStateForm, PlayerIsLeaderStateForm, PlayerVoteForMissionStateForm
 
 
 class GameRoomListView(LoginRequiredMixin, ListView):
@@ -51,8 +51,8 @@ class GameRoomDetailView(LoginRequiredMixin, DetailView):
         if self.object.phase == self.object.PHASES.mission_assignment:
             if self.current_player.is_leader:
                 form = PlayerIsLeaderStateForm(instance=self.current_player)
-        # elif self.object.phase == self.object.PHASES.mission_votation:
-        #     form = PlayerVotationStateForm(instance=current_player)
+        elif self.object.phase == self.object.PHASES.mission_votation:
+            form = PlayerVoteForMissionStateForm(instance=self.current_player)
 
         self.player_state_form = form
         return self.player_state_form
@@ -90,8 +90,14 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
         if self.get_form_class() == PlayerIsLeaderStateForm:
             players_to_mission = form.cleaned_data['players_to_mission']
             gameroom.add_players_to_active_mission(players_to_mission)
+        elif self.get_form_class() == PlayerVoteForMissionStateForm:
+            vote = form.cleaned_data['vote']
+            self.object.vote_for_mission(gameroom.get_active_mission(), vote)
         gameroom.check_all_players_ready()
         return response
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
         return self.object.gameroom.get_absolute_url()
@@ -104,8 +110,8 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
         if self.object.gameroom.phase == self.object.gameroom.PHASES.mission_assignment:
             if self.object.is_leader:
                 form = PlayerIsLeaderStateForm
-        # elif self.object.phase == self.object.PHASES.mission_votation:
-        #     form = PlayerVotationStateForm(instance=current_player)
+        elif self.object.gameroom.phase == self.object.gameroom.PHASES.mission_votation:
+            form = PlayerVoteForMissionStateForm
 
         self.player_state_form = form
         return self.player_state_form
