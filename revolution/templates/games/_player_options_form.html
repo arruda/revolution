@@ -1,20 +1,25 @@
 {% load crispy_forms_tags %}
 <div class="col-xs-12">
   <h2>Options:</h2>
-  {% if object.phase != object.PHASES.setup %}
-    <p>You are a {{ player.get_role_txt }}</p>
-  {% endif %}
-  {% if object.phase == object.PHASES.mission_resolution or object.phase == object.PHASES.mission_votation %}
-    <p>Assigned players in active mission:</p>
-
+  {% comment %}
     <ul>
-    {% for assigned_player in object.get_active_mission.assigned_players.all %}
-        <li>{{ assigned_player.user.username }}</li>
-    {% endfor %}
+
+        <li>not ready {% include "games/_not_ready_icon.html" %}</li>
+        <li>Is ready {% include "games/_ready_icon.html" %}</li>
+        <li>Active Mission {% include "games/_mission_icon.html" %}</li>
+        <li>Undefined {% include "games/_undefined_icon.html" %}</li>
+        <li>Assigned {% include "games/_assigned_icon.html" %}</li>
+        <li>Leader {% include "games/_leader_icon.html" %}</span></li>
+        <li>Revolution {% include "games/_revolution_icon.html" %}</li>
+        <li>Spy {% include "games/_spy_icon.html" %}</li>
+        <li>Yes {% include "games/_vote_yes_icon.html" %}</li>
+        <li>No {% include "games/_vote_no_icon.html" %}</li>
+
     </ul>
+  {% endcomment %}
+  {% if object.phase != object.PHASES.setup %}
+    {% include "games/_player_role_text_icon.html" %}
   {% endif %}
-
-
     <form class="form-horizontal" method="post" action="{% url 'games:player-ready' player.pk %}">
         {% csrf_token %}
         {{ player_ready_form|crispy }}

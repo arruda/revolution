@@ -49,3 +49,6 @@ $red: #b94a48;
 [hidden][style="display: block;"] {
   display: block !important;
 }
+
+$octicons-font-path: "../fonts";
+@import "../../../node_modules/octicons/octicons/octicons.scss";

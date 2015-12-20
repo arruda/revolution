@@ -1,0 +1,21 @@
+<h2>Missions:</h2>
+<ol>
+  {% for mission in object.mission_set.all %}
+    <li>
+    {% if mission.is_active %}
+        {% include "games/_mission_icon.html" %}
+    {% endif %}
+    | Players: {{ mission.amount_players }}
+    | Outcome:
+    {% if mission.outcome == mission.OUTCOMES.success %}
+        {% include "games/_revolution_icon.html" %}
+    {% elif mission.outcome == mission.OUTCOMES.failure %}
+        {% include "games/_spy_icon.html" %}
+    {% else  %}
+        {% include "games/_undefined_icon.html" %}
+    {% endif %}
+    | Assigned: {% for assigned in mission.assigned_players.all %} {{ assigned.user.username }}; {% endfor %}
+    </li>
+
+  {% endfor %}
+</ol>

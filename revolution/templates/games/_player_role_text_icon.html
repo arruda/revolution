@@ -1,0 +1,6 @@
+<p>You are a {{ player.get_role_txt }}
+{% if player.role == player.ROLES.spy %}
+    {% include "games/_spy_icon.html" %}
+{% else %}
+    {% include "games/_revolution_icon.html" %}
+{% endif %}</p>

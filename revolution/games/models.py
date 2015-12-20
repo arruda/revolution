@@ -313,6 +313,9 @@ class Player(models.Model):
         except MissionResolution.DoesNotExist:
             return None
 
+    def is_assigned_to_active_mission(self):
+        return self in self.gameroom.get_active_mission().assigned_players.all()
+
 
 @python_2_unicode_compatible
 class Mission(models.Model):

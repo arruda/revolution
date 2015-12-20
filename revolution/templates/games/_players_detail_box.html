@@ -1,0 +1,40 @@
+<h2>Players</h2>
+<ol>
+{% for p in object.player_set.all %}
+    <li>
+    {% if player.role == player.ROLES.spy %}
+        {% if p.role == p.ROLES.spy %}
+            {% include "games/_spy_icon.html" %}
+        {% else %}
+            {% include "games/_revolution_icon.html" %}
+        {% endif %}|
+    {% endif %}
+    {% if p.is_ready %}
+        {% include "games/_ready_icon.html" %}
+    {% else %}
+        {% include "games/_not_ready_icon.html" %}
+    {% endif %}
+    {% if object.phase != object.PHASES.mission_votation %}
+     |
+        {% if p.get_last_assignment_vote_for_active_mission.result %}
+            {% include "games/_vote_yes_icon.html" %}
+        {% else %}
+            {% include "games/_vote_no_icon.html" %}
+        {% endif %}
+    {% endif %}
+    {% if p.is_leader %}
+     | {% include "games/_leader_icon.html" %}
+    {% endif %}
+
+
+    {% if object.phase == object.PHASES.mission_resolution or object.phase == object.PHASES.mission_votation %}
+        {% if p.is_assigned_to_active_mission %}
+         |
+            {% include "games/_assigned_icon.html" %}
+        {% endif %}
+    {% endif %}
+    | <span >{{ p.user.username }}</span>
+    </li>
+
+{% endfor %}
+</ol>
