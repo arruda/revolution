@@ -71,6 +71,9 @@ class GameRoom(models.Model):
     def get_active_mission(self):
         return self.mission_set.get(is_active=True)
 
+    def get_selected_players_to_active_mission(self):
+        return self.get_active_mission().assigned_players.all()
+
     def add_players_to_active_mission(self, players):
         active_mission = self.get_active_mission()
         active_mission.assigned_players.clear()
@@ -118,7 +121,6 @@ class GameRoom(models.Model):
         Return true if more than half of players
         voted in favor for current mission
         """
-        import pdb; pdb.set_trace()
         active_mission = self.get_active_mission()
 
         players = list(self.player_set.all())
@@ -132,6 +134,39 @@ class GameRoom(models.Model):
             return False
         else:
             return True
+
+
+    def mission_resolution(self):
+        """
+        Resolution of the current mission, after the assigned
+        players set their outcomes
+        """
+        active_mission = self.get_active_mission()
+        failure_count = active_mission.missionresolution_set.filter(outcome=False).count()
+        if failure_count is not 0:
+            active_mission.outcome = active_mission.OUTCOMES.failure
+        else:
+            active_mission.outcome = active_mission.OUTCOMES.success
+
+        active_mission.is_active = False
+        active_mission.save()
+        next_mission = self.mission_set.get(pk=active_mission.pk + 1)
+        next_mission.is_active = True
+        next_mission.save()
+
+
+    def check_for_gameover(self):
+        ended_missions = self.mission_set.exclude(outcome=Mission.OUTCOMES.undefined)
+        success_count = ended_missions.filter(outcome=Mission.OUTCOMES.success).count()
+        failure_count = ended_missions.filter(outcome=Mission.OUTCOMES.failure).count()
+        if success_count >= 3:
+            self.winner = self.WINNERS.revolutionaries
+        elif failure_count >= 3:
+            self.winner = self.WINNERS.spies
+        else:
+            return False
+
+        return True
 
 
     def phase_resolution(self):
@@ -160,6 +195,7 @@ class GameRoom(models.Model):
                 self.phase = self.PHASES.leader_definition
 
         elif self.phase == self.PHASES.mission_resolution:
+            self.mission_resolution()
             self.phase = self.PHASES.gameover_check
 
         elif self.phase == self.PHASES.gameover_check:
@@ -271,7 +307,11 @@ class Player(models.Model):
         self.assignmentvote_set.create(mission=mission, result=vote)
         self.save()
 
-
+    def get_player_mission_resolution(self, mission):
+        try:
+            return self.missionresolution_set.get(mission=mission)
+        except MissionResolution.DoesNotExist:
+            return None
 
 
 @python_2_unicode_compatible
@@ -306,6 +346,14 @@ class Mission(models.Model):
 
     def get_outcome_txt(self):
         return self.OUTCOMES[self.outcome]
+
+    def add_player_resolution(self, player, resolution_outcome):
+        try:
+            prev_res = self.missionresolution_set.get(player=player)
+            prev_res.outcome = resolution_outcome
+            prev_res.save()
+        except MissionResolution.DoesNotExist:
+            self.missionresolution_set.create(player=player, outcome=resolution_outcome)
 
 
 @python_2_unicode_compatible

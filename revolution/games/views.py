@@ -10,7 +10,7 @@ from django.views.generic import CreateView
 from braces.views import LoginRequiredMixin
 
 from .models import GameRoom, Player
-from .forms import PlayerChangeReadyStateForm, PlayerIsLeaderStateForm, PlayerVoteForMissionStateForm
+from .forms import PlayerChangeReadyStateForm, PlayerIsLeaderStateForm, PlayerVoteForMissionStateForm, PlayerChooseMissionSuccessStateForm
 
 
 class GameRoomListView(LoginRequiredMixin, ListView):
@@ -54,6 +54,10 @@ class GameRoomDetailView(LoginRequiredMixin, DetailView):
         elif self.object.phase == self.object.PHASES.mission_votation:
             form = PlayerVoteForMissionStateForm(instance=self.current_player)
 
+        elif self.object.phase == self.object.PHASES.mission_resolution:
+            if self.current_player in self.object.get_selected_players_to_active_mission():
+                form = PlayerChooseMissionSuccessStateForm(instance=self.current_player)
+
         self.player_state_form = form
         return self.player_state_form
 
@@ -93,6 +97,10 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
         elif self.get_form_class() == PlayerVoteForMissionStateForm:
             vote = form.cleaned_data['vote']
             self.object.vote_for_mission(gameroom.get_active_mission(), vote)
+        elif self.get_form_class() == PlayerChooseMissionSuccessStateForm:
+            outcome = form.cleaned_data['outcome']
+            active_mission = gameroom.get_active_mission()
+            active_mission.add_player_resolution(self.object, outcome)
         gameroom.check_all_players_ready()
         return response
 
@@ -112,6 +120,9 @@ class PlayerChangeReadyStateView(LoginRequiredMixin, UpdateView):
                 form = PlayerIsLeaderStateForm
         elif self.object.gameroom.phase == self.object.gameroom.PHASES.mission_votation:
             form = PlayerVoteForMissionStateForm
+        elif self.object.gameroom.phase == self.object.gameroom.PHASES.mission_resolution:
+            if self.object in self.object.gameroom.get_selected_players_to_active_mission():
+                form = PlayerChooseMissionSuccessStateForm
 
         self.player_state_form = form
         return self.player_state_form

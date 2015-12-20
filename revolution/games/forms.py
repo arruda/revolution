@@ -46,3 +46,18 @@ class PlayerVoteForMissionStateForm(PlayerChangeReadyStateForm):
                 self.initial['vote'] = last_vote_in_mission.result
 
 
+
+class PlayerChooseMissionSuccessStateForm(PlayerChangeReadyStateForm):
+    outcome = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        # Only in case we build the form from an instance
+        if 'instance' in kwargs:
+            super(PlayerChooseMissionSuccessStateForm, self).__init__(*args, **kwargs)
+            gameroom = kwargs['instance'].gameroom
+            active_mission = gameroom.get_active_mission()
+            player_outcome = self.instance.get_player_mission_resolution(active_mission)
+            if player_outcome:
+                self.initial['outcome'] = player_outcome.outcome
+
+
